@@ -22,6 +22,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-pdf", action="store_true", help="Skip PDF generation")
     parser.add_argument("--pdf-engine", default=None, help="Pandoc PDF engine (default: xelatex)")
     parser.add_argument("--report-dir", default=None, help="Override Report directory path")
+    parser.add_argument("--de", action="store_true", help="Generate German output")
     return parser.parse_args()
 
 
@@ -40,6 +41,7 @@ def main() -> None:
     rows = load_rows(input_path)
     result = analyze(rows)
 
+    lang = "de" if args.de else "en"
     current_price = Decimal(str(args.current_price_eur)) if args.current_price_eur else None
 
     markdown = build_markdown(
@@ -48,12 +50,13 @@ def main() -> None:
         current_price_date=args.current_price_date,
         fx_rate=args.fx_rate,
         fx_date=args.fx_date,
+        lang=lang,
     )
     output_path.write_text(markdown, encoding="utf-8")
 
     if not args.no_charts:
         try:
-            generate_charts(input_path, chart_path)
+            generate_charts(input_path, chart_path, lang=lang)
         except Exception as exc:
             print(f"Chart generation failed: {exc}")
 

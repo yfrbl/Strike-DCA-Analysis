@@ -60,19 +60,35 @@ def btc(value: Decimal) -> str:
     return f"{q8(value):f}"
 
 
-def month_abbr(month_num: int) -> str:
-    names = {
-        1: "Jan.",
-        2: "Feb.",
-        3: "Mar.",
-        4: "Apr.",
-        5: "May.",
-        6: "Jun.",
-        7: "Jul.",
-        8: "Aug.",
-        9: "Sep.",
-        10: "Oct.",
-        11: "Nov.",
-        12: "Dec.",
-    }
+def month_abbr(month_num: int, lang: str = "en") -> str:
+    if lang == "de":
+        names = {
+            1: "Jan.",
+            2: "Feb.",
+            3: "Mrz.",
+            4: "Apr.",
+            5: "Mai",
+            6: "Jun.",
+            7: "Jul.",
+            8: "Aug.",
+            9: "Sep.",
+            10: "Okt.",
+            11: "Nov.",
+            12: "Dez.",
+        }
+    else:
+        names = {
+            1: "Jan.",
+            2: "Feb.",
+            3: "Mar.",
+            4: "Apr.",
+            5: "May.",
+            6: "Jun.",
+            7: "Jul.",
+            8: "Aug.",
+            9: "Sep.",
+            10: "Oct.",
+            11: "Nov.",
+            12: "Dec.",
+        }
     return names.get(month_num, "")

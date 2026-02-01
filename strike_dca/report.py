@@ -9,33 +9,46 @@ from .analysis import AnalysisResult
 from .utils import btc, fmt_dt, money, month_abbr, percent, q2
 
 
-def build_markdown(result: AnalysisResult, current_price_eur: Decimal | None = None,
-                   current_price_date: str | None = None,
-                   fx_rate: str | None = None,
-                   fx_date: str | None = None) -> str:
+def build_markdown(
+    result: AnalysisResult,
+    current_price_eur: Decimal | None = None,
+    current_price_date: str | None = None,
+    fx_rate: str | None = None,
+    fx_date: str | None = None,
+    lang: str = "en",
+) -> str:
     start_year = result.start_date.year if result.start_date else None
     end_year = result.end_date.year if result.end_date else None
 
     if start_year and end_year:
         if start_year == end_year:
-            period_label = f"In {start_year}"
+            period_label = f"In {start_year}" if lang == "en" else f"Im Jahr {start_year}"
         else:
-            period_label = f"In {start_year}–{end_year}"
+            period_label = (
+                f"In {start_year}–{end_year}" if lang == "en" else f"Im Zeitraum {start_year}–{end_year}"
+            )
     else:
-        period_label = "In the analysis period"
+        period_label = "In the analysis period" if lang == "en" else "Im Analysezeitraum"
 
     lines: list[str] = []
     title_year = f"{start_year}" if start_year == end_year and start_year else "Analysis"
     if start_year and end_year and start_year != end_year:
         title_year = f"{start_year}-{end_year}"
 
-    lines.append(f"# Strike {title_year} DCA Analysis (Real Purchases)")
+    lines.append(
+        f"# Strike {title_year} DCA Analysis (Real Purchases)"
+        if lang == "en"
+        else f"# Strike {title_year} DCA Analyse (Reale Käufe)"
+    )
     lines.append("")
 
-    lines.append("## Executive Summary")
+    lines.append("## Executive Summary" if lang == "en" else "## Zusammenfassung")
     lines.append(
         f"{period_label} {btc(result.total_btc)} BTC were purchased for {money(result.total_eur)} EUR; "
         f"the weighted average entry price is {money(result.avg_price)} EUR/BTC."
+        if lang == "en"
+        else f"{period_label} wurden {btc(result.total_btc)} BTC für {money(result.total_eur)} EUR gekauft; "
+        f"der gewichtete Ø Einstand liegt bei {money(result.avg_price)} EUR/BTC."
     )
 
     quarter_parts: list[str] = []
@@ -45,7 +58,8 @@ def build_markdown(result: AnalysisResult, current_price_eur: Decimal | None = N
         q_avg = (q_eur / q_btc) if q_btc else Decimal("0")
         quarter_parts.append(f"{q_key}: {money(q_avg)}")
     if quarter_parts:
-        lines.append("Quarterly average buy price (EUR/BTC): " + "; ".join(quarter_parts) + ".")
+        prefix = "Quarterly average buy price (EUR/BTC): " if lang == "en" else "Quartals-Ø Kaufpreis (EUR/BTC): "
+        lines.append(prefix + "; ".join(quarter_parts) + ".")
 
     if current_price_eur is not None:
         delta = ((current_price_eur - result.avg_price) / result.avg_price) * Decimal("100")
@@ -53,46 +67,82 @@ def build_markdown(result: AnalysisResult, current_price_eur: Decimal | None = N
         pnl = current_value - result.total_eur
         pnl_pct = (pnl / result.total_eur) * Decimal("100") if result.total_eur else Decimal("0")
         direction = "above" if delta >= 0 else "below"
+        direction_de = "über" if delta >= 0 else "unter"
         fx_note = f"; FX {fx_date}: 1 EUR = {fx_rate} USD" if fx_rate and fx_date else ""
         date_note = f" (as of {current_price_date}{fx_note})" if current_price_date else ""
+        date_note_de = f" (Stand: {current_price_date}{fx_note})" if current_price_date else ""
         lines.append(
             f"At a current BTC price of {money(current_price_eur)} EUR{date_note}, the market price is "
             f"about {q2(abs(delta))}% {direction} the average entry; unrealized P/L is "
             f"{money(pnl)} EUR ({percent(pnl_pct)}) based on purchased BTC."
+            if lang == "en"
+            else f"Bei einem aktuellen BTC-Preis von {money(current_price_eur)} EUR{date_note_de} liegt der Marktpreis "
+            f"ca. {q2(abs(delta))}% {direction_de} dem Ø Einstand; unrealisiert entspricht das "
+            f"{money(pnl)} EUR ({percent(pnl_pct)}) auf Basis der gekauften BTC."
         )
 
     lines.append("")
 
-    lines.append("## Definitions")
-    lines.append("- **Real purchases**: `Transaction Type = Purchase/Trade` **and** `Amount BTC` present.")
-    lines.append("- **Cost basis**: if empty, derived from `Amount EUR` or `Amount BTC * BTC Price`.")
-    lines.append("- **Non-executed purchases**: Purchase rows without BTC amount (e.g., initiated/cancelled target orders).")
+    lines.append("## Definitions" if lang == "en" else "## Definitionen")
+    if lang == "en":
+        lines.append("- **Real purchases**: `Transaction Type = Purchase/Trade` **and** `Amount BTC` present.")
+        lines.append("- **Cost basis**: if empty, derived from `Amount EUR` or `Amount BTC * BTC Price`.")
+        lines.append("- **Non-executed purchases**: Purchase rows without BTC amount (e.g., initiated/cancelled target orders).")
+    else:
+        lines.append("- **Reale Käufe**: `Transaction Type = Purchase/Trade` **und** `Amount BTC` vorhanden.")
+        lines.append("- **Cost Basis**: falls leer, wird sie aus `Amount EUR` oder `Amount BTC * BTC Price` abgeleitet.")
+        lines.append("- **Nicht-executed Käufe**: Purchase-Zeilen ohne BTC-Menge (z. B. Initiated/Cancelled Target Orders).")
     lines.append("")
 
-    lines.append("## Overview")
+    lines.append("## Overview" if lang == "en" else "## Überblick")
     if result.start_date and result.end_date:
-        lines.append(f"- Period: {result.start_date} to {result.end_date}")
-    lines.append(f"- Real purchases: {len(result.real_purchases)}")
+        lines.append(
+            f"- Period: {result.start_date} to {result.end_date}"
+            if lang == "en"
+            else f"- Zeitraum: {result.start_date} bis {result.end_date}"
+        )
+    lines.append(f"- Real purchases: {len(result.real_purchases)}" if lang == "en" else f"- Reale Käufe: {len(result.real_purchases)}")
     lines.append(
-        f"- Purchase days: {result.purchase_days} (days with >1 purchase: {result.multi_purchase_days}, "
-        f"max/day: {result.max_per_day})"
+        f"- Purchase days: {result.purchase_days} (days with >1 purchase: {result.multi_purchase_days}, max/day: {result.max_per_day})"
+        if lang == "en"
+        else f"- Kauftage: {result.purchase_days} (Tage mit >1 Kauf: {result.multi_purchase_days}, max/Tag: {result.max_per_day})"
     )
-    lines.append(f"- BTC purchased: {btc(result.total_btc)}")
-    lines.append(f"- Invested (EUR, cost basis): {money(result.total_eur)}")
-    lines.append(f"- Average entry price: {money(result.avg_price)} EUR/BTC")
+    lines.append(f"- BTC purchased: {btc(result.total_btc)}" if lang == "en" else f"- Gekaufte BTC: {btc(result.total_btc)}")
+    lines.append(
+        f"- Invested (EUR, cost basis): {money(result.total_eur)}"
+        if lang == "en"
+        else f"- Investiert (EUR, Cost Basis): {money(result.total_eur)}"
+    )
+    lines.append(
+        f"- Average entry price: {money(result.avg_price)} EUR/BTC"
+        if lang == "en"
+        else f"- Ø Kaufpreis: {money(result.avg_price)} EUR/BTC"
+    )
     lines.append("")
 
-    lines.append("## Fees")
-    lines.append(f"- Total EUR fees: {money(result.fee_eur_total)}")
-    lines.append(f"- Total BTC fees: {btc(result.fee_btc_total)}")
+    lines.append("## Fees" if lang == "en" else "## Gebühren")
+    lines.append(
+        f"- Total EUR fees: {money(result.fee_eur_total)}"
+        if lang == "en"
+        else f"- EUR-Fees gesamt: {money(result.fee_eur_total)}"
+    )
+    lines.append(
+        f"- Total BTC fees: {btc(result.fee_btc_total)}"
+        if lang == "en"
+        else f"- BTC-Fees gesamt: {btc(result.fee_btc_total)}"
+    )
     lines.append("")
 
-    lines.append("## Monthly Overview (Real Purchases)")
-    lines.append("| Month | EUR Spent | BTC Bought | Avg Price (EUR/BTC) | Min Price | Max Price | # Purchases |")
+    lines.append("## Monthly Overview (Real Purchases)" if lang == "en" else "## Monatsübersicht (Reale Käufe)")
+    lines.append(
+        "| Month | EUR Spent | BTC Bought | Avg Price (EUR/BTC) | Min Price | Max Price | # Purchases |"
+        if lang == "en"
+        else "| Monat | Käufe EUR | Käufe BTC | Ø Preis (EUR/BTC) | Min Preis | Max Preis | Anzahl Käufe |"
+    )
     lines.append("|---|---:|---:|---:|---:|---:|---:|")
     for m in sorted(result.monthly.keys()):
         month_num = int(m.split("-")[1])
-        month_label = month_abbr(month_num)
+        month_label = month_abbr(month_num, lang=lang)
         eur = result.monthly[m]["eur"]
         btc_amt = result.monthly[m]["btc"]
         cnt = result.monthly[m]["count"]
@@ -106,30 +156,53 @@ def build_markdown(result: AnalysisResult, current_price_eur: Decimal | None = N
         )
     lines.append("")
 
-    lines.append("## Other Transaction Types")
-    lines.append(f"- Deposits: {len(result.deposits)} (Total EUR: {money(result.deposit_total)})")
-    lines.append(f"- Withdrawals: {len(result.withdrawals)} (Total EUR: {money(result.withdrawal_total)})")
+    lines.append("## Other Transaction Types" if lang == "en" else "## Andere Transaktionstypen")
     lines.append(
-        f"- Sends: {len(result.sends)} (Net BTC: {btc(result.send_total_btc)}; "
-        f"excluding reversals: {btc(result.send_total_btc_excl_rev)})"
+        f"- Deposits: {len(result.deposits)} (Total EUR: {money(result.deposit_total)})"
+        if lang == "en"
+        else f"- Deposits: {len(result.deposits)} (Summe EUR: {money(result.deposit_total)})"
+    )
+    lines.append(
+        f"- Withdrawals: {len(result.withdrawals)} (Total EUR: {money(result.withdrawal_total)})"
+        if lang == "en"
+        else f"- Withdrawals: {len(result.withdrawals)} (Summe EUR: {money(result.withdrawal_total)})"
+    )
+    lines.append(
+        f"- Sends: {len(result.sends)} (Net BTC: {btc(result.send_total_btc)}; excluding reversals: {btc(result.send_total_btc_excl_rev)})"
+        if lang == "en"
+        else f"- Sends: {len(result.sends)} (Netto BTC: {btc(result.send_total_btc)}; ohne Reversals: {btc(result.send_total_btc_excl_rev)})"
     )
     if result.send_reversals:
-        lines.append(f"- Send reversals: {len(result.send_reversals)}")
+        lines.append(
+            f"- Send reversals: {len(result.send_reversals)}"
+            if lang == "en"
+            else f"- Send-Reversals: {len(result.send_reversals)}"
+        )
     lines.append("")
 
-    lines.append("## Non-Executed Purchase Events")
-    lines.append(f"- Count: {len(result.non_executed)}")
-    lines.append(f"- Sum Amount EUR (signed): {money(result.non_exec_amount_eur)}")
+    lines.append("## Non-Executed Purchase Events" if lang == "en" else "## Nicht-executed Purchase-Events")
+    lines.append(f"- Count: {len(result.non_executed)}" if lang == "en" else f"- Anzahl: {len(result.non_executed)}")
+    lines.append(
+        f"- Sum Amount EUR (signed): {money(result.non_exec_amount_eur)}"
+        if lang == "en"
+        else f"- Summe Amount EUR (inkl. Vorzeichen): {money(result.non_exec_amount_eur)}"
+    )
     if result.non_exec_by_desc:
-        lines.append("- Breakdown by description:")
+        lines.append("- Breakdown by description:" if lang == "en" else "- Aufschlüsselung nach Description:")
         for desc, cnt in result.non_exec_by_desc.items():
-            label = desc if desc else "(empty)"
+            label = desc if desc else ("(empty)" if lang == "en" else "(leer)")
             lines.append(f"  - {label}: {cnt}")
     lines.append("")
 
     if result.inferred_rows:
-        lines.append("## Purchases With Derived Cost Basis")
-        lines.append("| Date (UTC) | BTC | Price | Cost Basis | Source | Description |")
+        lines.append(
+            "## Purchases With Derived Cost Basis" if lang == "en" else "## Käufe mit abgeleiteter Cost Basis"
+        )
+        lines.append(
+            "| Date (UTC) | BTC | Price | Cost Basis | Source | Description |"
+            if lang == "en"
+            else "| Datum (UTC) | BTC | Preis | Cost Basis | Quelle | Beschreibung |"
+        )
         lines.append("|---|---:|---:|---:|---|---|")
         for row, cost, source in result.inferred_rows:
             price = row.get("price") or Decimal("0")
@@ -140,13 +213,21 @@ def build_markdown(result: AnalysisResult, current_price_eur: Decimal | None = N
             )
         lines.append("")
 
-    lines.append("## Data Quality / Checks")
-    lines.append(f"- Purchase rows without BTC amount: {len(result.non_executed)}")
-    lines.append(f"- Purchase rows with derived cost basis: {len(result.inferred_rows)}")
+    lines.append("## Data Quality / Checks" if lang == "en" else "## Datenqualität / Checks")
+    lines.append(
+        f"- Purchase rows without BTC amount: {len(result.non_executed)}"
+        if lang == "en"
+        else f"- Purchase-Zeilen ohne BTC-Menge: {len(result.non_executed)}"
+    )
+    lines.append(
+        f"- Purchase rows with derived cost basis: {len(result.inferred_rows)}"
+        if lang == "en"
+        else f"- Purchase-Zeilen mit fehlender Cost Basis (abgeleitet): {len(result.inferred_rows)}"
+    )
     lines.append("")
 
-    lines.append("## Deposit Distribution")
-    lines.append("| EUR Amount | Count |")
+    lines.append("## Deposit Distribution" if lang == "en" else "## Deposit-Verteilung")
+    lines.append("| EUR Amount | Count |" if lang == "en" else "| Betrag EUR | Anzahl |")
     lines.append("|---:|---:|")
     for amt, cnt in sorted(result.deposit_counts.items()):
         lines.append(f"| {amt:.0f} | {cnt} |")
