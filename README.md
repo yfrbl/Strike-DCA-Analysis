@@ -1,5 +1,17 @@
 # Strike DCA Analysis
 
+## Explainer
+Strike.me wallet exports as CSV are used for analysis of DCA performance (weekly, monthly, yearly).
+
+### How to export account statements (mobile + desktop)
+1. Open Strike (mobile app or web dashboard at `strike.me`).
+2. Go to your profile/menu in the top-right.
+3. Open **Documents** and then **Account Statements**.
+4. Choose statement range (monthly, annual, or custom if available).
+5. Export/download the statement as CSV.
+
+Reference: [Strike FAQ - How can I download my transaction history?](https://strike.me/en-GB/faq/how-can-i-download-my-transaction-history/)
+
 Analyze Strike BTC DCA exports (two formats supported) and generate:
 - Markdown report
 - Monthly charts (PNG)
@@ -68,16 +80,3 @@ This repo ships a synthetic example file:
 - `examples/strike-2025-dummy.csv`
 
 It contains **no real transaction data** and is safe to share.
-
-## Notes
-- EUR values are shown without decimals (rounded to whole euros).
-- Month labels are abbreviated (e.g., `Jan.`).
-- If `matplotlib` or `pandoc` is missing, the report still renders but charts/PDF are skipped with a warning.
-
-## Project layout
-```
-strike_dca/           # core library
-analyze_strike.py     # main CLI wrapper
-strike_charts.py      # chart-only CLI wrapper
-examples/             # dummy input + generated output
-```
